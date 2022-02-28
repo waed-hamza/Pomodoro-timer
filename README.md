@@ -38,8 +38,8 @@ This Application is using React Hooks component to build the Pomodoro timer or t
  ```
  - npm start
  ```
- 
 <br>
+
 ## Available Scripts
 
 In the project directory, you can run:

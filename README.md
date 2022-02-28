@@ -19,7 +19,7 @@ The Pomodoro Technique is a time management method that can be used for any task
 
 This Application is using React Hooks component to build the Pomodoro timer or the 25 + 5 clock.
 
-<br><br>
+<br>
 
  ## How 
 
@@ -39,7 +39,7 @@ This Application is using React Hooks component to build the Pomodoro timer or t
  - npm start
  ```
  
-<br><br>
+<br>
 ## Available Scripts
 
 In the project directory, you can run:

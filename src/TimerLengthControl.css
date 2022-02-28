@@ -1,0 +1,24 @@
+#timer-length-container {
+    padding: 15px;
+    font-size: 22px;
+    font-weight: 600;
+}
+
+#break-label, #session-label {
+    font-size: 27px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+#timer-length-innerContainer {
+    display: flex;
+    justify-content: space-around;
+}
+
+button {
+    background: none;
+    outline: none;
+    border: none;
+    color: rgb(58, 58, 58);
+    cursor: pointer;
+}

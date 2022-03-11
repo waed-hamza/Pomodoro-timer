@@ -6,29 +6,24 @@ function App() {
   const [breakLength, setBreakLength] = useState(5);
   const [sessionLength, setSessionLength] = useState(25);
   const [timer, setTimer] = useState(1500);
-  const [timerState, setTimerState] = useState("stopped");
   const [timerType, setTimerType] = useState("Session");
   const [intervalID, setIntervalID] = useState("");
+  const [play, setPlay] = useState(false);
   const [alarmColor, setAlarmColor] = useState({ color: "rgb(58, 58, 58)" });
   const audioBeep = useRef();
 
-  const accurateInterval = function (fn, time) {
-    let cancel, nextAt, wrapper, timeout;
+  const interval = () => {
+    let timeOut, cancel;
 
-    nextAt = new Date().getTime() + time;
-    timeout = null;
+    timeOut = setTimeout(() => {
+      if (timer && play) {
+        setTimer(timer - 1);
+      }
+    }, 1000);
 
-    wrapper = function () {
-      nextAt += time;
-      timeout = setTimeout(wrapper, nextAt - new Date().getTime());
-      return fn();
+    cancel = () => {
+      return clearTimeout(timeOut);
     };
-
-    cancel = function () {
-      return clearTimeout(timeout);
-    };
-
-    timeout = setTimeout(wrapper, nextAt - new Date().getTime());
 
     return {
       cancel: cancel,
@@ -36,43 +31,34 @@ function App() {
   };
 
   const handleBreakLength = (e) => {
-    lengthControl("breakLength", e.currentTarget.value, breakLength, "Session");
+    const sign = e.currentTarget.value;
+
+    if (sign === "-" && breakLength !== 1) {
+      setBreakLength(breakLength - 1);
+      if (timerType === "Break") {
+        setTimer(timer - 60);
+      }
+    } else if (sign === "+" && breakLength !== 60) {
+      setBreakLength(breakLength + 1);
+      if (timerType === "Break") {
+        setTimer(timer + 60);
+      }
+    }
   };
 
   const handleSessionLength = (e) => {
-    lengthControl(
-      "sessionLength",
-      e.currentTarget.value,
-      sessionLength,
-      "Break"
-    );
-  };
+    const sign = e.currentTarget.value;
 
-  const lengthControl = (stateToChange, sign, currentLength, timeType) => {
-    if (timerState === "running") {
-      return;
-    }
-
-    if (timerType === timeType) {
-      if (sign === "-" && currentLength !== 1) {
-        stateToChange === "breakLength"
-          ? setBreakLength(currentLength - 1)
-          : setSessionLength(currentLength - 1);
-      } else if (sign === "+" && currentLength !== 60) {
-        stateToChange === "breakLength"
-          ? setBreakLength(currentLength + 1)
-          : setSessionLength(currentLength + 1);
+    if (sign === "-" && sessionLength !== 1) {
+      setSessionLength(sessionLength - 1);
+      if (timerType === "Session") {
+        setTimer(timer - 60);
       }
-    } else if (sign === "-" && currentLength !== 1) {
-      stateToChange === "breakLength"
-        ? setBreakLength(currentLength - 1)
-        : setSessionLength(currentLength - 1);
-      setTimer(currentLength * 60 - 60);
-    } else if (sign === "+" && currentLength !== 60) {
-      stateToChange === "breakLength"
-        ? setBreakLength(currentLength + 1)
-        : setSessionLength(currentLength + 1);
-      setTimer(currentLength * 60 + 60);
+    } else if (sign === "+" && sessionLength !== 60) {
+      setSessionLength(sessionLength + 1);
+      if (timerType === "Session") {
+        setTimer(timer + 60);
+      }
     }
   };
 
@@ -86,48 +72,36 @@ function App() {
     return `${minutes}:${seconds}`;
   };
 
-  const timerControl = () => {
-    if (timerState === "stopped") {
-      beginCountDown();
-      setTimerState("running");
-    } else {
-      setTimerState("stopped");
-      if (intervalID) {
-        intervalID.cancel();
-      }
+  const handlePlay = () => {
+    setPlay(!play);
+  };
+
+  const resetTimer = () => {
+    if (!timer && timerType === "Session") {
+      setTimer(breakLength * 60);
+      setTimerType("Break");
+    }
+
+    if (!timer && timerType === "Break") {
+      setTimer(sessionLength * 60);
+      setTimerType("Session");
     }
   };
 
-  const beginCountDown = () => {
-    setIntervalID(
-      accurateInterval(() => {
-        decrementTimer();
-      }, 1000)
-    );
-  };
-
-  const decrementTimer = () => {
-    setTimer((prev) => prev - 1);
+  const controlTimer = () => {
+    if (play) {
+      setIntervalID(interval);
+      warning(timer);
+      buzzer(timer);
+      resetTimer();
+    } else if (intervalID) {
+      intervalID.cancel();
+    }
   };
 
   useEffect(() => {
-    warning(timer);
-    buzzer(timer);
-
-    if (timer < 0) {
-      if (intervalID) {
-        intervalID.cancel();
-      }
-
-      if (timerType === "Session") {
-        beginCountDown();
-        switchTimer(breakLength * 60, "Break");
-      } else {
-        beginCountDown();
-        switchTimer(sessionLength * 60, "Session");
-      }
-    }
-  }, [timer]);
+    controlTimer();
+  }, [timer, play]);
 
   const warning = (_timer) => {
     if (_timer < 60) {
@@ -143,20 +117,14 @@ function App() {
     }
   };
 
-  const switchTimer = (num, str) => {
-    setTimer(num);
-    setTimerType(str);
-    // setAlarmColor({ color: 'white' });
-  };
-
   const reset = () => {
     setBreakLength(5);
     setSessionLength(25);
     setTimer(1500);
-    setTimerState("stopped");
     setTimerType("Session");
-    setIntervalID("");
     setAlarmColor({ color: "rgb(58, 58, 58)" });
+    setPlay(false);
+    setIntervalID("");
 
     if (intervalID) {
       intervalID.cancel();
@@ -168,7 +136,7 @@ function App() {
 
   return (
     <div className="App">
-      <h1>25 + 5 Clock</h1>
+      <h1>Pomodoro Timer</h1>
 
       <div id="timer-control-container">
         <TimerLengthControl
@@ -178,6 +146,7 @@ function App() {
           lengthId="break-length"
           incId="break-increment"
           decId="break-decrement"
+          disable={play}
           onClick={handleBreakLength}
         />
         <TimerLengthControl
@@ -187,6 +156,7 @@ function App() {
           lengthId="session-length"
           incId="session-increment"
           decId="session-decrement"
+          disable={play}
           onClick={handleSessionLength}
         />
       </div>
@@ -197,7 +167,7 @@ function App() {
         <div id="time-left">{clockify()}</div>
 
         <div id="buttons-container">
-          <button id="start-stop" onClick={timerControl} style={alarmColor}>
+          <button id="start-stop" onClick={handlePlay} style={alarmColor}>
             <i className="fa fa-play fa-2x" />
             <i className="fa fa-pause fa-2x" />
           </button>
